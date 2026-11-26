@@ -1,0 +1,19 @@
+{
+  "binding_id": "sha256:cb2de14b6fcc5b6164b1911ab83767dc0a08991bac69ddc6f1003d35cfc20d65",
+  "channel_id": "process-cb2de14b6fcc5b6164b1911ab83767dc0a08991bac69ddc6f1003d35cfc20d65",
+  "generation": "g1",
+  "lifecycle": "active",
+  "provider": "ferrite-rcs",
+  "provider_instance": "acct-1",
+  "ref": "feature/x",
+  "repository": {
+    "display": "acct-1/my-app",
+    "stable_id": "my-app"
+  },
+  "schema": "buzz.process.binding.v1",
+  "scope": {
+    "buzz_origin": "https://buzz.example",
+    "community_owner_pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "visibility": "private"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "services": [
+    { "name": "process-github-state", "primitive": "store", "workload": {"read_qps": 262, "write_qps": 177, "record_size_kb": 1, "keying": "PerKey", "hot_set_gib": 0} },
+    { "name": "process-github-requests", "primitive": "queue" },
+    { "name": "process-github-replies", "primitive": "queue" }
+  ],
+  "applications": [
+    {
+      "name": "buzz-process-github",
+      "artifact_key": "apps/buzz-process-github@v1",
+      "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bindings": [
+        { "handle": "state", "kind": "store", "service": "process-github-state" },
+        { "handle": "requests", "kind": "queue", "service": "process-github-requests" },
+        { "handle": "replies", "kind": "queue", "service": "process-github-replies" }
+      ],
+      "egress": [
+        { "handle": "buzz-egress", "destinations": ["https://buzz.ferrite.run/"] },
+        { "handle": "github-egress", "destinations": ["https://api.github.com/"] }
+      ],
+      "compute": { "memory_mb": 256, "cpu_percent": 25 },
+      "routes": [
+        {
+          "prefix": "/process/github/hook",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": ["x-hub-signature-256", "x-github-delivery", "x-github-event"]
+        }
+      ]
+    }
+  ]
+}

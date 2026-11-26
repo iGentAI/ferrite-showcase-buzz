@@ -1,0 +1,1 @@
+import{t as e}from"./buzz-web-B9Pl1d-b.js";e();

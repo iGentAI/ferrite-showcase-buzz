@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The shell's own capabilities, granted one at a time. The SPA reaches the relay over an ordinary browser WebSocket and fetch, which need no capability at all, so what is here is only what the shell genuinely does: the native permission dialog the agent broker uses, opening an external link in the user's real browser (Tauri intercepts window.open, so without this an external link silently does nothing inside the webview), and the dock/taskbar controls a tab cannot perform on itself. NOT opener:default, which would additionally allow revealing a file in the user's file manager - a capability this shell never asks for, so it is not granted. The two opener entries are both required and neither is redundant: allow-open-url permits the COMMAND, and allow-default-urls is the SCOPE (mailto:, tel:, http:, https:) without which every open would be permitted and then denied.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "opener:allow-open-url",
+    "opener:allow-default-urls",
+    "core:window:allow-set-badge-count",
+    "core:window:allow-set-badge-label",
+    "core:window:allow-set-focus",
+    "core:window:allow-show",
+    "core:window:allow-unminimize"
+  ]
+}

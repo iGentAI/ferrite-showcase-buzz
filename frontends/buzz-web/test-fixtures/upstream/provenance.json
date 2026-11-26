@@ -1,0 +1,30 @@
+{
+  "repository": "https://github.com/block/buzz",
+  "commit": "4cd82f513214aad11c2b742ce7cc7c681e8e32a0",
+  "files": [
+    {
+      "origin": "scripts/normative-corpus.json",
+      "blob": "cb0ff4ae278db79a1676041df51a6548e407624f",
+      "path": "test-fixtures/upstream/normative-corpus.json",
+      "sha256": "7479b263cdb7e25abf45ea65519a350eda2c6969d9be40e7f54e2da519b827b0"
+    },
+    {
+      "origin": "docs/nips/NIP-MP.fixtures.json",
+      "blob": "cfc570ec65b877535bb381532ddfc6891517cc8b",
+      "path": "test-fixtures/upstream/NIP-MP.fixtures.json",
+      "sha256": "bda8cb81410c65511d4bce1c6f3d05e82337bb481c67b3398d3abc60bc8b1848"
+    },
+    {
+      "origin": "docs/nips/NIP-MP.fold-fixtures.json",
+      "blob": "c036646c3400973b5981299c9ed0615571094f01",
+      "path": "test-fixtures/upstream/NIP-MP.fold-fixtures.json",
+      "sha256": "aff4fd713e0ceadf691547d028cc47dbb70ca3c082dae926057364393e6a3ac6"
+    },
+    {
+      "origin": "test-fixtures/entity-links.json",
+      "blob": "fccf4ef07e4abebe13ebcc5beba3166783c323a3",
+      "path": "test-fixtures/upstream/entity-links.json",
+      "sha256": "93b84bc43591328d5b76d8ac1c64a832ef9606c0e93ee81f2bac51ca81e115f4"
+    }
+  ]
+}

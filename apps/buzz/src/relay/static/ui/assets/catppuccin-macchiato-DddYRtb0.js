@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-BCiCTKAo.js";import{r as t,t as n}from"./catppuccin-macchiato-BkhRebp7.js";function r(){return(r=e((()=>{t()})))()}r();export{n as default};

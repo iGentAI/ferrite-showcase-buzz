@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@features-manifest": ["./preview-features.json"],
+      "@protected-features": ["./src/protectedFeatures/public.ts"],
+      "@protected-feature-components": ["./src/protectedFeatures/publicUi.ts"],
+      "@model-capabilities-manifest": ["./model-capabilities.json"],
+      // The TypeScript half of the `@tauri-apps/*` seam; the Vite half is
+      // `tauriWebAlias()` in vite.config.ts and the two must agree. Each Tauri
+      // module resolves to the same-named facade in `src/shared/tauri-web/`,
+      // which re-exports the browser stand-in from `shared/lib/desktop-bridge`.
+      // A module with NO facade falls through to the shorthand ambient wildcard
+      // in `src/shared/tauri-web/tauri-apps.d.ts` (pattern ambient modules are
+      // TypeScript's last resort, so this never shadows a facade that exists)
+      // and throws a named error at the call site instead. See that directory's
+      // README for why that is the loud failure and not a hole.
+      "@tauri-apps/api/*": ["./src/shared/tauri-web/api/*"],
+      "@tauri-apps/*": ["./src/shared/tauri-web/*"]
+    },
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

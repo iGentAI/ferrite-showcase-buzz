@@ -1,0 +1,37 @@
+[package]
+name = "buzz-desktop"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "The thin buzz desktop shell: hosts the buzz-web bundle unchanged and answers only the command families a browser tab cannot"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# All the logic lives next door, with no Tauri dependency, so it can be tested
+# without a webview. This crate is wiring.
+buzz-desktop-core = { path = "../core" }
+tauri = { version = "2", features = [] }
+# The permission dialog. A NATIVE dialog deliberately: it needs no client code,
+# so the vendored SPA stays byte-identical to upstream, and it cannot be
+# dismissed by page script.
+tauri-plugin-dialog = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }
+# The HTTP client for the remote ACP binding. Blocking and
+# small on purpose: the exchange it drives is request/response, it runs on its
+# own thread, and a shell does not need an async runtime to make one POST.
+ureq = "2"
+# The OS keychain. Real durability where the platform has it; see
+# `keychain.rs` for what happens where it does not.
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+tauri-plugin-opener = "2"
+
+[features]
+# Tauri's own convention: a release build hides the console window on Windows.
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

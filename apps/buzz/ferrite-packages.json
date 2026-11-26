@@ -1,0 +1,22 @@
+{
+  "packages": {
+    "acp": {
+      "mount": "acp"
+    },
+    "ferrite-sso": {
+      "mount": "ferrite_sso"
+    },
+    "http-query": {
+      "mount": "http_query"
+    },
+    "mcp": {
+      "mount": "mcp"
+    },
+    "sha256-hmac": {
+      "mount": "crypto_kernel"
+    },
+    "http-route-budget": {
+      "mount": "http_route_budget"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-edge/
+test-results/
+playwright-report/
+# `tsc --noEmit` still writes this because tsconfig.json references the
+# composite tsconfig.node.json (which must emit).
+tsconfig.tsbuildinfo
+# Where `scripts/sync-upstream.mjs --apply` moves a file upstream has dropped
+# that the allowlist does not claim. It parks rather than deletes, so nothing is
+# ever lost to a sync; empty this by hand once you have looked at it.
+.sync-parked/
+# e2e creations kept for the next run to delete (e2e/teardown.ts).
+.e2e-state/

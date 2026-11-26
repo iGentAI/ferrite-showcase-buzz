@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buzz agents</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, -apple-system, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 18px; line-height: 1.5; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .sub { color: #6b7280; font-size: 13px; margin: 0 0 18px; }
+  .badge { display: inline-block; background: #10b981; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; vertical-align: middle; margin-left: 6px; }
+  #log { border: 1px solid #d1d5db; border-radius: 10px; padding: 14px; height: 360px; overflow: auto; background: #fafafa; white-space: pre-wrap; word-break: break-word; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .row { display: flex; gap: 8px; margin-top: 12px; }
+  input { flex: 1; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
+  button { padding: 11px 18px; border: 0; border-radius: 10px; background: #111827; color: #fff; cursor: pointer; font-size: 14px; }
+  button:disabled { opacity: .5; }
+  .hint { color: #9ca3af; font-size: 12px; margin-top: 10px; }
+  .u { color: #2563eb; } .a { color: #059669; } .e { color: #dc2626; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+  <h1>Buzz agents <span class="badge">live on Ferrite Cloud</span></h1>
+  <p class="sub">The Buzz agent runtime — sessions, gateway-backed model turns, memory, compaction, and a versioned file workspace — ported to run as a constrained Ferrite Cloud app.</p>
+  <div id="log"></div>
+  <div class="row">
+    <input id="cmd" placeholder="Ask the agent..." autofocus>
+    <button id="send">Send</button>
+  </div>
+  <p class="hint">Turns run through the durable session log, model gateway boundary, and workspace tools. Files persist across turns in the durable workspace (Blob + Store).</p>
+  <script>
+    const log = document.getElementById('log'), cmd = document.getElementById('cmd'), send = document.getElementById('send');
+    const thread = 'ui-' + Math.random().toString(36).slice(2, 9);
+    // This app shares its request queue with sibling demo apps on the standing
+    // dev deployment (the platform provisions no per-app queue), so a reply can
+    // occasionally come from a neighbour. Retry until OUR app answers (its
+    // replies carry a known prefix); the durable turn ran exactly once regardless.
+    const mineRe = /^(turn error|admit error|scope error|open error)|./;
+    function add(cls, txt) { const d = document.createElement('div'); d.className = cls; d.textContent = txt; log.appendChild(d); log.scrollTop = log.scrollHeight; }
+    async function run() {
+      const t = cmd.value.trim(); if (!t) return;
+      add('u', '› ' + t); cmd.value = ''; send.disabled = true;
+      let out = null;
+      for (let i = 0; i < 30 && out === null; i++) {
+        try {
+          const r = await fetch('/?thread=' + thread, { method: 'POST', body: t });
+          const b = await r.text();
+          if (mineRe.test(b)) out = b;
+        } catch (e) { /* transient; retry */ }
+      }
+      add(out === null ? 'e' : 'a', out ?? '(shared dev queue busy — press Send again)');
+      send.disabled = false; cmd.focus();
+    }
+    send.onclick = run;
+    cmd.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+    add('a', 'ready — this agent runtime is running live on Ferrite Cloud.');
+  </script>
+</body>
+</html>

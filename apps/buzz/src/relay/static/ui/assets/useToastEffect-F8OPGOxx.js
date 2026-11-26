@@ -1,0 +1,1 @@
+import{n as e,o as t}from"./rolldown-runtime-BCiCTKAo.js";import{nt as n,pt as r,tt as i}from"./buzz-CWCgy7EP.js";function a(e,t){let r=s.useRef(null);s.useEffect(()=>{e&&e!==r.current&&(r.current=e,n[t](e)),e||(r.current=null)},[e,t])}function o(e,t){a(e,`success`),a(t,`error`)}var s;function c(){return(c=e((()=>{s=t(r(),1),i()})))()}export{o as n,c as t};

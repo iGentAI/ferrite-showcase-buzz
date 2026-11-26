@@ -1,0 +1,31 @@
+[package]
+name = "buzz-desktop-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "The buzz desktop shell's logic: local git, credentials, ACP harness supervision, agent event signing and the fail-closed permission broker — with no Tauri dependency, so every decision is testable without a webview"
+
+# NO tauri, and no git library either. `git` itself is the git implementation:
+# it is already installed wherever a developer works with repositories, it is
+# the program whose behaviour users' muscle memory and hooks expect, and
+# shelling out to it cannot disagree with the command line about what a
+# repository contains. A linked library would be a second implementation to
+# keep in agreement with the first.
+#
+# The crypto crates ARE dependencies, and deliberately so: this is a client, not
+# a constrained Ferrite app, and hand-rolling BIP-340 to save a dependency would
+# trade an audited implementation for an unaudited one. `k256` is what signs an
+# agent's events; `sha2` computes the event id and the NIP-98 payload digest;
+# `base64` encodes the authorization header; `rand_core` supplies the OS entropy
+# a new agent key needs (a constrained app has none, which is why the RELAY
+# derives its persona keys instead — a desktop has a real RNG).
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+k256 = { version = "0.13", features = ["schnorr"] }
+sha2 = "0.10"
+base64 = "0.22"
+rand_core = { version = "0.6", features = ["getrandom"] }

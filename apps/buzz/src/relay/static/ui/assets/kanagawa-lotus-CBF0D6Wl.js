@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-BCiCTKAo.js";import{n as t,t as n}from"./kanagawa-lotus-DH_h_qzE.js";function r(){return(r=e((()=>{n()})))()}r();export{t as default};

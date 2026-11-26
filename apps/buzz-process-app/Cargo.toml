@@ -1,0 +1,25 @@
+[package]
+name = "buzz-process-app"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "The buzz process cell: branch/PR process rooms and member-authorized RCS lifecycle verbs, as one constrained Ferrite app deployed in two provider-isolated profiles (native Ferrite RCS, GitHub)"
+
+# The single-bundle contract, as in `buzz`: ONE runtime dependency. The
+# cryptography under `src/crypto/` and `src/b64.rs` is vendored source from
+# `buzz/src/relay/` (verbatim but for one mechanical path rewrite), held
+# byte-identical by `tests/vendor_drift.rs` — the code gate admits no second
+# dependency, and two hand-maintained copies of a signing primitive would be
+# two chances to disagree about a signature.
+[dependencies]
+ferrite-app = { path = "../../../ferrite-sdk/ferrite-app" }
+
+[[bin]]
+name = "buzz-process-app"
+path = "src/main.rs"
+
+[lints]
+workspace = true

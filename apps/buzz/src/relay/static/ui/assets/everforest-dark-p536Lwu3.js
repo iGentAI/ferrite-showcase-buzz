@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-BCiCTKAo.js";import{r as t,t as n}from"./everforest-dark-CfDl6wzg.js";function r(){return(r=e((()=>{t()})))()}r();export{n as default};

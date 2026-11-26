@@ -1,0 +1,45 @@
+# The ferrite-buzz workspace: the Buzz application, its process cell and its
+# agent SDK.
+#
+# The Ferrite SDK is not in this repository. `ferrite-app` and
+# `ferrite-app-test` are path dependencies on a checkout of the public SDK
+# (https://github.com/iGentAI/ferrite-sdk) that sits beside this one
+# (`../ferrite-sdk` from this directory). README.md, "Setup", describes the
+# layout.
+#
+# `frontends/buzz-desktop` is its own Cargo workspace. A Tauri client is not a
+# constrained Ferrite application, and its dependency tree is kept out of the
+# graph that the one-dependency applications resolve in.
+[workspace]
+resolver = "2"
+members = [
+    "apps/buzz",
+    "apps/buzz-process-app",
+    "tools/buzz-sdk",
+]
+exclude = [
+    "frontends/buzz-desktop",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["iGent AI"]
+license = "MIT"
+repository = "https://github.com/iGentAI/ferrite-showcase-buzz"
+rust-version = "1.89"
+
+# `apps/buzz/Cargo.toml` writes the same tables out in full,
+# because the platform builds that directory alone and refuses a manifest
+# that inherits `lints`; keep the two equal.
+[workspace.lints.rust]
+unsafe_code = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+perf = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"

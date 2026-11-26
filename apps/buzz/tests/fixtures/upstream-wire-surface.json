@@ -1,0 +1,124 @@
+{
+  "_comment": "The stock upstream wire surface, retained from the original f86dfc58 enumeration and reconciled with the frontend sync through 4cd82f51. The sync adds GET and POST default-branch routes; this port deliberately declines both because it does not host Git repository objects. severe_upstream_wire_gate.rs drives every served and declined row against the relay.",
+  "upstream_pin": "4cd82f513214aad11c2b742ce7cc7c681e8e32a0",
+  "base_url_rule": "Upstream derives the HTTP base from the relay WebSocket URL (ws->http, wss->https) and strips the trailing slash, then appends these absolute paths. The NIP-98 u tag carries the resulting ABSOLUTE URL, which this relay's auth::url_covers_path already accepts alongside a bare path.",
+  "paths": [
+    {
+      "path": "/events",
+      "method": "POST",
+      "auth": "nip98",
+      "request": "one signed nostr event",
+      "response": "relay ack object",
+      "served": true,
+      "handler": "submit_event"
+    },
+    {
+      "path": "/query",
+      "method": "POST",
+      "auth": "nip98",
+      "request": "array of NIP-01 filters",
+      "response": "array of events",
+      "served": true,
+      "handler": "upstream_query"
+    },
+    {
+      "path": "/count",
+      "method": "POST",
+      "auth": "nip98",
+      "request": "array of NIP-01 filters",
+      "response": "{count}",
+      "served": true,
+      "handler": "upstream_count"
+    },
+    {
+      "path": "/info",
+      "method": "GET",
+      "auth": "none",
+      "request": "none",
+      "response": "NIP-11 document",
+      "served": true,
+      "handler": "relay_info"
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "auth": "none",
+      "request": "none",
+      "response": "ok",
+      "served": true,
+      "handler": "inline"
+    },
+    {
+      "path": "/_liveness",
+      "method": "GET",
+      "auth": "none",
+      "request": "none",
+      "response": "ok",
+      "served": true,
+      "handler": "inline"
+    },
+    {
+      "path": "/_readiness",
+      "method": "GET",
+      "auth": "none",
+      "request": "none",
+      "response": "ok",
+      "served": true,
+      "handler": "inline"
+    },
+    {
+      "path": "/moderation/restricted",
+      "method": "GET",
+      "auth": "nip98",
+      "request": "none",
+      "response": "restriction list",
+      "served": false,
+      "reason": "This port answers the same question about the CALLER at GET /buzz/api/me, which reports their own bans and timeouts. A list of everybody's restrictions is deliberately not served: it would be a probe oracle for who is banned here, which is exactly the disclosure the coarse 'restricted:' refusal token exists to avoid."
+    },
+    {
+      "path": "/upload",
+      "method": "PUT",
+      "auth": "blossom kind 24242",
+      "request": "raw bytes",
+      "response": "blob descriptor",
+      "served": false,
+      "reason": "This port's media write path is the chunked /buzz/api/media/* family, which verifies a declared type against the bytes before anything reaches the blob plane. A PUT of raw bytes cannot carry that declaration, and the gateway's ingress envelope is not a streaming upload; a client uploads through the media routes instead."
+    },
+    {
+      "path": "/media/{sha256_ext}",
+      "method": "GET",
+      "auth": "blossom get",
+      "request": "none",
+      "response": "raw bytes",
+      "served": false,
+      "reason": "Media is served by the gateway's own public content route at /buzz/blob/{sha256}.{ext} - the digest IS the capability - so the relay never proxies bytes. An alias would mean the app reading a blob and re-emitting it through its request envelope, which is strictly worse than the URL a client already has."
+    },
+    {
+      "path": "/hooks/{id}",
+      "method": "POST",
+      "auth": "shared secret",
+      "request": "arbitrary JSON",
+      "response": "workflow ack",
+      "served": false,
+      "reason": "Workflow webhook triggers are not implemented in this port (its workflow triggers are message, reaction, schedule and manual). The GitHub-facing webhook face lives in buzz-process-app's github cell, which verifies an HMAC over raw bytes rather than comparing a URL-embedded secret."
+    },
+    {
+      "path": "/git/{owner}/{repo}/default-branch",
+      "method": "GET",
+      "auth": "nip98",
+      "request": "repository default-branch lookup",
+      "response": "repository branch metadata",
+      "served": false,
+      "reason": "This relay does not host Git repository objects or expose a Git control plane. The imported client supports this upstream route, but this deployment deliberately returns its route-fallthrough refusal rather than accepting an unsupported repository operation."
+    },
+    {
+      "path": "/git/{owner}/{repo}/default-branch",
+      "method": "POST",
+      "auth": "nip98",
+      "request": "repository default-branch update",
+      "response": "repository branch metadata",
+      "served": false,
+      "reason": "This relay does not host Git repository objects or expose a Git control plane. The imported client supports this upstream route, but this deployment deliberately returns its route-fallthrough refusal rather than accepting an unsupported repository operation."
+    }
+  ]
+}

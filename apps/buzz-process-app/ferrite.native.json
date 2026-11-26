@@ -1,0 +1,21 @@
+{
+  "services": [
+    { "name": "process-native-state", "primitive": "store", "workload": {"read_qps": 262, "write_qps": 177, "record_size_kb": 1, "keying": "PerKey", "hot_set_gib": 0} }
+  ],
+  "applications": [
+    {
+      "name": "buzz-process-native",
+      "artifact_key": "apps/buzz-process-native@v1",
+      "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bindings": [
+        { "handle": "state", "kind": "store", "service": "process-native-state" }
+      ],
+      "egress": [
+        { "handle": "control-egress", "destinations": ["https://mcp.ferrite.cloud/"] },
+        { "handle": "buzz-egress", "destinations": ["https://buzz.ferrite.run/"] }
+      ],
+      "compute": { "memory_mb": 256, "cpu_percent": 25 },
+      "routes": []
+    }
+  ]
+}

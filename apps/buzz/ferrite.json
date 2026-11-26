@@ -1,0 +1,505 @@
+{
+  "services": [
+    {
+      "name": "buzz-requests",
+      "primitive": "queue",
+      "workload": {
+        "read_qps": 200,
+        "write_qps": 100,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-replies",
+      "primitive": "queue",
+      "workload": {
+        "read_qps": 20,
+        "write_qps": 200,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-stream-requests",
+      "primitive": "queue",
+      "workload": {
+        "read_qps": 20,
+        "write_qps": 20,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-ws-requests",
+      "primitive": "queue",
+      "workload": {
+        "read_qps": 100,
+        "write_qps": 100,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-agent-turns",
+      "primitive": "queue",
+      "workload": {
+        "read_qps": 20,
+        "write_qps": 20,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-events",
+      "primitive": "store", "volume_mib": 1024,
+      "workload": {
+        "read_qps": 4000,
+        "write_qps": 200,
+        "record_size_kb": 1,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-config",
+      "primitive": "store", "volume_mib": 256,
+      "workload": {
+        "read_qps": 1400,
+        "write_qps": 500,
+        "record_size_kb": 1,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-guards",
+      "primitive": "ape", "volume_mib": 512,
+      "workload": {
+        "read_qps": 1000,
+        "write_qps": 100,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-feed",
+      "primitive": "log",
+      "workload": {
+        "read_qps": 500,
+        "write_qps": 100,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-media",
+      "primitive": "blob", "volume_mib": 2048,
+      "workload": {
+        "read_qps": 200,
+        "write_qps": 10,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 1
+      }
+    },
+    {
+      "name": "buzz-web-assets",
+      "primitive": "blob", "volume_mib": 512,
+      "workload": {
+        "read_qps": 20,
+        "write_qps": 20,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-agent-sessions",
+      "primitive": "ape", "volume_mib": 512,
+      "workload": {
+        "read_qps": 200,
+        "write_qps": 20,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-agent-workspace-index",
+      "primitive": "store", "volume_mib": 1024,
+      "workload": {
+        "read_qps": 2000,
+        "write_qps": 20,
+        "record_size_kb": 1,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-agent-workspace-content",
+      "primitive": "blob", "volume_mib": 2048,
+      "workload": {
+        "read_qps": 100,
+        "write_qps": 10,
+        "record_size_kb": 0,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-agent-memory",
+      "primitive": "store", "volume_mib": 1024,
+      "workload": {
+        "read_qps": 1000,
+        "write_qps": 20,
+        "record_size_kb": 1,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-gateway-config",
+      "primitive": "store", "volume_mib": 256,
+      "workload": {
+        "read_qps": 100,
+        "write_qps": 10,
+        "record_size_kb": 1,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    },
+    {
+      "name": "buzz-sso-nonces",
+      "primitive": "store",
+      "workload": {
+        "read_qps": 20,
+        "write_qps": 20,
+        "record_size_kb": 1,
+        "keying": "PerKey",
+        "hot_set_gib": 0
+      }
+    }
+  ],
+  "applications": [
+    {
+      "name": "buzz",
+      "artifact_key": "apps/buzz@v1",
+      "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "bindings": [
+        {
+          "handle": "requests",
+          "kind": "queue",
+          "service": "buzz-requests"
+        },
+        {
+          "handle": "replies",
+          "kind": "queue",
+          "service": "buzz-replies"
+        },
+        {
+          "handle": "stream-requests",
+          "kind": "queue",
+          "service": "buzz-stream-requests"
+        },
+        {
+          "handle": "ws-requests",
+          "kind": "queue",
+          "service": "buzz-ws-requests"
+        },
+        {
+          "handle": "agent-turns",
+          "kind": "queue",
+          "service": "buzz-agent-turns"
+        },
+        {
+          "handle": "events",
+          "kind": "store",
+          "service": "buzz-events"
+        },
+        {
+          "handle": "config",
+          "kind": "store",
+          "service": "buzz-config"
+        },
+        {
+          "handle": "guards",
+          "kind": "ape",
+          "service": "buzz-guards"
+        },
+        {
+          "handle": "feed",
+          "kind": "topics",
+          "service": "buzz-feed"
+        },
+        {
+          "handle": "media",
+          "kind": "blob",
+          "service": "buzz-media"
+        },
+        {
+          "handle": "web-assets",
+          "kind": "blob",
+          "service": "buzz-web-assets"
+        },
+        {
+          "handle": "agent-sessions",
+          "kind": "ape",
+          "service": "buzz-agent-sessions"
+        },
+        {
+          "handle": "agent-workspace-index",
+          "kind": "store",
+          "service": "buzz-agent-workspace-index"
+        },
+        {
+          "handle": "agent-workspace-content",
+          "kind": "blob",
+          "service": "buzz-agent-workspace-content"
+        },
+        {
+          "handle": "agent-memory",
+          "kind": "store",
+          "service": "buzz-agent-memory"
+        },
+        {
+          "handle": "gateway-config",
+          "kind": "store",
+          "service": "buzz-gateway-config"
+        },
+        {
+          "handle": "nonces",
+          "kind": "store",
+          "service": "buzz-sso-nonces"
+        }
+      ],
+      "egress": [
+        {
+          "handle": "provider-egress",
+          "destinations": [
+            "https://api.anthropic.com/",
+            "https://api.openai.com/",
+            "https://api.fireworks.ai/inference/"
+          ]
+        },
+        {
+          "handle": "fabric-a2a-egress",
+          "destinations": [
+            "https://agents.example.com/a2a/"
+          ]
+        },
+        {
+          "handle": "link-preview-egress",
+          "destinations": [
+            "https://github.com/",
+            "https://gitlab.com/",
+            "https://docs.rs/",
+            "https://crates.io/",
+            "https://developer.mozilla.org/",
+            "https://en.wikipedia.org/",
+            "https://stackoverflow.com/",
+            "https://arxiv.org/",
+            "https://news.ycombinator.com/"
+          ]
+        },
+        {
+          "handle": "mcp-egress-cloudflare",
+          "destinations": [
+            "https://docs.mcp.cloudflare.com/",
+            "https://bindings.mcp.cloudflare.com/",
+            "https://builds.mcp.cloudflare.com/",
+            "https://observability.mcp.cloudflare.com/",
+            "https://radar.mcp.cloudflare.com/",
+            "https://containers.mcp.cloudflare.com/",
+            "https://browser.mcp.cloudflare.com/",
+            "https://logs.mcp.cloudflare.com/",
+            "https://ai-gateway.mcp.cloudflare.com/",
+            "https://autorag.mcp.cloudflare.com/",
+            "https://auditlogs.mcp.cloudflare.com/",
+            "https://dns-analytics.mcp.cloudflare.com/",
+            "https://dex.mcp.cloudflare.com/",
+            "https://casb.mcp.cloudflare.com/",
+            "https://graphql.mcp.cloudflare.com/"
+          ]
+        },
+        {
+          "handle": "mcp-egress-partners",
+          "destinations": [
+            "https://mcp.linear.app/",
+            "https://api.githubcopilot.com/"
+          ]
+        }
+      ],
+      "compute": {
+        "memory_mb": 512,
+        "cpu_percent": 25
+      },
+      "routes": [
+        {
+          "prefix": "/buzz/api/",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie",
+            "authorization",
+            "x-buzz-authorization"
+          ]
+        },
+        {
+          "prefix": "/events",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie",
+            "authorization",
+            "x-buzz-authorization"
+          ]
+        },
+        {
+          "prefix": "/query",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie",
+            "authorization",
+            "x-buzz-authorization"
+          ]
+        },
+        {
+          "prefix": "/count",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie",
+            "authorization",
+            "x-buzz-authorization"
+          ]
+        },
+        {
+          "prefix": "/info",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie"
+          ]
+        },
+        {
+          "prefix": "/health",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie"
+          ]
+        },
+        {
+          "prefix": "/_liveness",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie"
+          ]
+        },
+        {
+          "prefix": "/_readiness",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie"
+          ]
+        },
+        {
+          "prefix": "/mcp",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie",
+            "mcp-method",
+            "mcp-name",
+            "mcp-protocol-version",
+            "authorization",
+            "x-buzz-authorization"
+          ]
+        },
+        {
+          "prefix": "/acp",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "acp-connection-id",
+            "cookie",
+            "authorization",
+            "x-buzz-authorization"
+          ]
+        },
+        {
+          "prefix": "/.well-known/",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie"
+          ]
+        },
+        {
+          "prefix": "/buzz/sub/",
+          "binding": "stream-requests",
+          "kind": "stream"
+        },
+        {
+          "prefix": "/buzz/",
+          "binding": "ws-requests",
+          "kind": "ws"
+        },
+        {
+          "prefix": "/buzz/ui/",
+          "binding": "web-assets",
+          "kind": "content",
+          "key_prefix": "ui/",
+          "public": true
+        },
+        {
+          "prefix": "/buzz/blob/",
+          "binding": "media",
+          "kind": "content",
+          "key_prefix": "media/",
+          "public": true
+        },
+        {
+          "prefix": "/",
+          "binding": "requests",
+          "kind": "api",
+          "forward_headers": [
+            "accept",
+            "cookie"
+          ]
+        }
+      ],
+      "required_secrets": [
+        "sso_broker_origin",
+        "sso_shared_secret",
+        "buzz-stream-token-key",
+        "buzz-relay-identity",
+        "buzz-invite-key",
+        "buzz-mcp-key",
+        "buzz-mcp-resource"
+      ]
+    }
+  ]
+}

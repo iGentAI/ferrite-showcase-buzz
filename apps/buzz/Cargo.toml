@@ -1,0 +1,81 @@
+[package]
+name = "buzz"
+autotests = false
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+# The crate is iGent AI's work under MIT, with portions of `src/relay` and
+# `src/agents` derived from Apache-2.0 sources; the repository's NOTICE lists them.
+license = "MIT AND Apache-2.0"
+repository.workspace = true
+rust-version.workspace = true
+description = "The Buzz workspace as ONE constrained Ferrite app: the signed-event relay, the persona agent runtime, and the model-provider boundary in a single source bundle, deployed as a single application over the platform's core planes"
+
+# The single-bundle contract: ONE runtime dependency, ferrite-app. Everything
+# else — the relay protocol, vendored safe-Rust cryptography, the agent
+# runtime, provider wire building — is SOURCE in this crate. The platform's
+# code gate admits no second dependency; the platform's six core planes
+# (store/log/queue/ape/blob/executor) are the only services the app consumes.
+[dependencies]
+ferrite-app = { path = "../../../ferrite-sdk/ferrite-app" }
+
+[dev-dependencies]
+ferrite-app-test = { path = "../../../ferrite-sdk/ferrite-app-test" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[[bin]]
+name = "buzz"
+path = "src/main.rs"
+
+# `platform-queue-cancel` compiles the queue-level recall of already published
+# schedule wakes (`QueueClusterClient::cancel`). The packaged SDK carries
+# that method; the released platform builder does not yet, so it is OFF by default and the
+# schedule row's `cancelled`/occurrence fence is what stops a cancelled wake.
+# Enable it only for a platform that ships the method.
+[features]
+platform-queue-cancel = []
+# `platform-topic-read-wait` makes the live feed pumps park in the topic plane's
+# `read_wait` (byte-bounded page plus retained base). The released platform
+# builder has no such method,
+# so the default build reads with `read_from` and sleeps on an empty page.
+platform-topic-read-wait = []
+
+# The lint tables are written out rather than inherited (`workspace = true`):
+# the platform builds this directory alone, with no workspace root, and the
+# released CLI refuses a deploy whose manifest inherits `lints`
+# (DEPLOY_MANIFEST_INHERITS_WORKSPACE). Keep them equal to the root
+# `[workspace.lints]` tables.
+[lints.rust]
+unsafe_code = "warn"
+unused_must_use = "deny"
+
+[lints.clippy]
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+perf = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+
+# buzz embeds its web client (a 709 KB JS bundle and a 239 KB stylesheet whose
+# fonts are inline base64), which put the attested object over the platform's
+# 16 MiB ceiling: 16,997,928 B against a 16,777,216 B limit. These are pure
+# size settings — link-time optimisation across one codegen unit, and no
+# symbol table in the shipped binary — so nothing about the app's behaviour
+# changes. Prefer this over deleting the embedded fonts, which would cost the
+# client its typography.
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+# One integration executable keeps the complete suite within the hosted builder
+# workspace; each former target keeps its own module and fixtures.
+[[test]]
+name = "hosted_suite"
+path = "tests/hosted_suite.rs"
+
+# Pool counters are process-global; preserve this proof in a separate process.
+[[test]]
+name = "severe_plane_pool_gate"
+path = "tests/severe_plane_pool_gate.rs"

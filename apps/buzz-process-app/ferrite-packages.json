@@ -1,0 +1,7 @@
+{
+  "packages": {
+    "sha256-hmac": {
+      "mount": "crypto_kernel"
+    }
+  }
+}

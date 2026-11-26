@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-BCiCTKAo.js";import{ut as t}from"./buzz-CWCgy7EP.js";import{at as n,it as r}from"./buzz-DKp6xz9S.js";import{ha as i,ma as a}from"./buzz-Bd8TSKxF.js";function o({isHuddleTranscript:e}){return e?(0,s.jsx)(a,{}):(0,s.jsx)(r,{includeHeader:!0,kind:`channel`})}var s;function c(){return(c=e((()=>{i(),n(),s=t()})))()}export{c as n,o as t};

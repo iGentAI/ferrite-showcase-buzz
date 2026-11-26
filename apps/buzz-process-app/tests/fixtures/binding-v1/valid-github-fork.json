@@ -1,0 +1,20 @@
+{
+  "binding_id": "sha256:9958e44805d9001188bd05a6aa4f0c5138e7c7546868de6a3dbb8b345f1add61",
+  "channel_id": "process-9958e44805d9001188bd05a6aa4f0c5138e7c7546868de6a3dbb8b345f1add61",
+  "generation": "g2",
+  "lifecycle": "active",
+  "provider": "github",
+  "provider_instance": "github.com",
+  "ref": "refs/heads/feature/z",
+  "repository": {
+    "display": "acme/widgets",
+    "head_stable_id": "999",
+    "stable_id": "12345"
+  },
+  "schema": "buzz.process.binding.v1",
+  "scope": {
+    "buzz_origin": "https://buzz.example",
+    "community_owner_pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "visibility": "private"
+  }
+}

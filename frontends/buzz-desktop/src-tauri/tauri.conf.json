@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "buzz",
+  "version": "0.1.0",
+  "identifier": "ai.igent.buzz.desktop",
+  "build": {
+    "frontendDist": "../../buzz-web/dist",
+    "devUrl": "http://localhost:5173"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "deb",
+      "appimage",
+      "dmg",
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Productivity",
+    "shortDescription": "buzz \u2014 the workspace, with local git and local agents",
+    "longDescription": "The buzz workspace client. The same app a browser tab runs, plus the things a tab cannot do: real git against your working copies, and local coding agents over ACP with a fail-closed permission dialog."
+  }
+}

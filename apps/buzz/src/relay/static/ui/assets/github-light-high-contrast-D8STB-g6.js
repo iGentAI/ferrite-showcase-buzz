@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-BCiCTKAo.js";import{r as t,t as n}from"./github-light-high-contrast-BK9t65-C.js";function r(){return(r=e((()=>{t()})))()}r();export{n as default};

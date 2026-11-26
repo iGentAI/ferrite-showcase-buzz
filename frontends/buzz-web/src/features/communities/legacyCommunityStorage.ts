@@ -1,0 +1,182 @@
+import { loadCommunityDiscoveryAfterLeave } from "@/features/communities/communityStorage";
+import { invokeTauri } from "@/shared/api/tauri";
+import { getStorageItem, safeLocalStorage } from "@/shared/lib/safeStorage";
+import {
+  migrateLegacyCommunityStorage,
+  stripCommunityKeyMaterial,
+} from "./communityStorage";
+
+const BUZZ_COMMUNITIES_KEY = "buzz-communities";
+const BUZZ_ACTIVE_COMMUNITY_KEY = "buzz-active-community-id";
+const BUZZ_ONBOARDING_COMPLETION_STORAGE_KEY_PREFIX =
+  "buzz-onboarding-complete.v1:";
+const LOCAL_DEV_RELAY_URLS = new Set([
+  "ws://localhost:3000",
+  "ws://127.0.0.1:3000",
+]);
+
+type LegacyCommunityStorageSnapshot = {
+  workspaces: string | null;
+  activeWorkspaceId: string | null;
+  onboardingCompletions: Array<{
+    pubkey: string;
+    value: string;
+  }>;
+};
+
+type StoredCommunity = {
+  relayUrl?: unknown;
+};
+
+function parseCommunityList(raw: string | null): StoredCommunity[] | null {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as StoredCommunity[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeRelayUrl(relayUrl: string) {
+  return relayUrl.trim().replace(/\/$/, "");
+}
+
+function hasOnlyLocalDevCommunity(raw: string | null): boolean {
+  const communities = parseCommunityList(raw);
+  return (
+    communities?.length === 1 &&
+    typeof communities[0]?.relayUrl === "string" &&
+    LOCAL_DEV_RELAY_URLS.has(normalizeRelayUrl(communities[0].relayUrl))
+  );
+}
+
+function hasNonLocalCurrentCommunities(raw: string | null): boolean {
+  const communities = parseCommunityList(raw);
+  return (
+    communities !== null &&
+    communities.length > 0 &&
+    !hasOnlyLocalDevCommunity(raw)
+  );
+}
+
+function shouldWriteLegacyCommunities({
+  currentCommunitiesRaw,
+  legacyCommunitiesRaw,
+}: {
+  currentCommunitiesRaw: string | null;
+  legacyCommunitiesRaw: string | null;
+}) {
+  const legacyCommunities = parseCommunityList(legacyCommunitiesRaw);
+  if (!legacyCommunities || legacyCommunities.length === 0) {
+    return false;
+  }
+
+  return !hasNonLocalCurrentCommunities(currentCommunitiesRaw);
+}
+
+export function applyLegacyCommunityStorage(
+  legacyStorage: LegacyCommunityStorageSnapshot,
+  storage: Storage = safeLocalStorage(),
+): void {
+  const currentCommunitiesRaw = storage.getItem(BUZZ_COMMUNITIES_KEY);
+  const shouldWriteCommunities = shouldWriteLegacyCommunities({
+    currentCommunitiesRaw,
+    legacyCommunitiesRaw: legacyStorage.workspaces,
+  });
+
+  // The Sprout snapshot can carry the nsec that older builds stored inside
+  // each community entry; never copy the key into Buzz storage.
+  const cleanedCommunities = legacyStorage.workspaces
+    ? stripCommunityKeyMaterial(legacyStorage.workspaces)
+    : null;
+  if (shouldWriteCommunities && cleanedCommunities) {
+    storage.setItem(BUZZ_COMMUNITIES_KEY, cleanedCommunities);
+  }
+
+  const currentActiveCommunityId = storage.getItem(BUZZ_ACTIVE_COMMUNITY_KEY);
+  // The legacy active id is meaningful only beside the legacy list it came
+  // from, or when the current list holds that community; otherwise it would
+  // point at a community Buzz does not have.
+  if (
+    legacyStorage.activeWorkspaceId &&
+    (shouldWriteCommunities ||
+      (!currentActiveCommunityId &&
+        communityListHasId(currentCommunitiesRaw, legacyStorage.activeWorkspaceId)))
+  ) {
+    storage.setItem(BUZZ_ACTIVE_COMMUNITY_KEY, legacyStorage.activeWorkspaceId);
+  }
+
+  for (const completion of legacyStorage.onboardingCompletions) {
+    const key = `${BUZZ_ONBOARDING_COMPLETION_STORAGE_KEY_PREFIX}${completion.pubkey}`;
+    if (storage.getItem(key) === null) {
+      storage.setItem(key, completion.value);
+    }
+  }
+}
+
+/**
+ * Seed Buzz localStorage from legacy Sprout WebKit localStorage before the app
+ * renders providers that read community state. The native command reads the old
+ * app identifier's WebKit SQLite database; this frontend step writes only when
+ * Buzz does not already have community state, except for the known broken
+ * Sprout→Buzz first-run handoff that created a single localhost community.
+ */
+export async function migrateLegacyCommunityStorageBeforeRender(): Promise<void> {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  // The getter itself can throw on a denied-storage origin; the safe accessor
+  // degrades to an in-memory store instead of crashing pre-render
+  // (finding_84e4436364226b23).
+  migrateLegacyCommunityStorage(safeLocalStorage());
+  // block/buzz#5078 — read through the throw-safe accessor so a denied-storage
+  // origin degrades to "no community state" instead of crashing pre-render.
+  const currentCommunitiesRaw = getStorageItem(BUZZ_COMMUNITIES_KEY);
+  const hasCurrentActiveCommunity = getStorageItem(BUZZ_ACTIVE_COMMUNITY_KEY);
+  if (
+    currentCommunitiesRaw &&
+    hasCurrentActiveCommunity &&
+    !hasOnlyLocalDevCommunity(currentCommunitiesRaw)
+  ) {
+    return;
+  }
+
+  // The user left their last community on purpose: re-importing the old
+  // Sprout list (still on disk) would bring the left communities back.
+  if (loadCommunityDiscoveryAfterLeave(safeLocalStorage())) {
+    return;
+  }
+
+  try {
+    applyLegacyCommunityStorage(
+      await invokeTauri<LegacyCommunityStorageSnapshot>(
+        "get_legacy_workspace_storage",
+      ),
+    );
+  } catch (error) {
+    console.warn("Failed to read legacy Sprout community storage.", error);
+  }
+}
+
+function communityListHasId(raw: string | null, id: string): boolean {
+  if (!raw) return false;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return (
+      Array.isArray(parsed) &&
+      parsed.some(
+        (entry) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          (entry as { id?: unknown }).id === id,
+      )
+    );
+  } catch {
+    return false;
+  }
+}

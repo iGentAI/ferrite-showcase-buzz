@@ -1,0 +1,34 @@
+# Build output
+target/
+dist/
+dist-*/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+
+# Dependencies. `node_modules/` matches a directory only; a sandbox that links
+# the directory elsewhere leaves a symlink of the same name, which is a file.
+node_modules/
+node_modules
+
+# Test and browser-run output
+test-results/
+playwright-report/
+.playwright-mcp/
+.e2e-state/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+ferrite.local.toml
+ferrite.isolated.*.json
+.ferrite/
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+
+# Parked files from an upstream sync (frontends/buzz-web/scripts/sync-upstream.mjs)
+.sync-parked/

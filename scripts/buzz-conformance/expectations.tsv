@@ -1,0 +1,310 @@
+# suite	test	expected	class	note
+#
+# Baseline: ferrite buzz-relay at ws://3emul7w0sqvwfom6.localhost:28443/buzz/, upstream
+# block/buzz @ 070fb6a1, run 2026-07-28 with --shim --pg. 43/196 runnable tests pass.
+#
+# The `note` column is a key into this legend. Regenerate with --update-expect.
+#
+#   X-PUBKEY [missing-shim]
+#       The test bootstraps over HTTP with a bare `X-Pubkey:` header -- buzz's dev-mode auth fallback (b
+#       uzz crates/buzz-relay/src/api/bridge.rs:117, active when require_auth_token=false). Our relay is
+#        NIP-98-only (buzz-relay/src/auth.rs:167 authenticate) and buzz-relay/ferrite.json forwards only
+#        `authorization`, so the header never even reaches the app. No proxy can bridge it: it would hav
+#       e to mint a NIP-98 event signed by the caller's secret key, and ingress.rs:539 refuses any event
+#        whose author differs from the authenticated caller. Fix belongs in the relay (derive the writer
+#        from the body event's own signature on POST /buzz/api/events, or add a config-gated X-Pubkey fa
+#       llback plus the ferrite.json forward_headers entry).
+#   MODERATOR-SEED [missing-shim]
+#       Needs the caller to be a community moderator. `buzz-community-moderators` lives in the config st
+#       ore and nothing outside the app can write it;
+#       the platform owner MCP face has 57 tools and none of them writes a store. pg-shim.sh register-ow
+#       ner is the hook for the relay operator route being added separately.
+#   NIP09-A-TAG [nonconformance]
+#       NIP-09: a kind:5 whose only target is an `a` coordinate is accepted (OK true) and then does noth
+#       ing -- the addressable event stays queryable. effects.rs:385 apply_deletion walks only `e` tags
+#       and soft-removes only the deleter's own kind:7 reactions; there is no `a` branch. NIP-11 adverti
+#       ses NIP 9.
+#   NIP45-COUNT [nonconformance]
+#       NIP-45 COUNT is unimplemented, and the refusal is a frame-level NOTICE with no subscription id s
+#       o the caller never learns which request died. ws.rs:199 ClientMessage parses REQ/CLOSE/EVENT/AUT
+#       H only. Minimum fix: answer ["CLOSED", sub_id, "unsupported: ..."].
+#   CLOSED-SHAPE [nonconformance]
+#       A REQ refused at frame-parse time (sub id over 64 chars, more than 8 filters) is answered with a
+#        bare NOTICE that carries no subscription id, so the client hangs with no EOSE and no CLOSED. ws
+#       .rs:223 runs check_sub_id inside the Deserialize impl, which discards the id before a CLOSED cou
+#       ld name it. The 64-char cap itself is NIP-01's own bound -- upstream advertises 256 -- so the de
+#       fect is the answer shape, not the limit.
+#   NIP29-9007 [nonconformance]
+#       NIP-29 kind:9007 create-group does not create a channel. derive_channel (ingress.rs:2106) return
+#       s the event's own `h` tag, then authorize_channel_write (ingress.rs:2155) fails closed with `not
+#        found: no such channel`. kind.rs:803 already documents that 9007 'creates the channel, so it ca
+#       nnot reference one' -- derive_channel contradicts that. ingress.rs:2389 says POST /buzz/api/chan
+#       nels 'not a 9007 event' is how a room is created here, which is a deliberate port decision that
+#       conflicts with advertising NIP-29 in supported_nips.
+#   HTTP-403 [nonconformance]
+#       BuzzError::Unauthorized is documented as 'authenticated but not permitted' -- HTTP 403 -- but in
+#       gress.rs:444 http_status maps it to 401 and the relay never returns 403 at all. invites.rs:118 r
+#       eturns Unauthorized("invite_invalid"); buzz returns 403 there. A 401 makes a standard HTTP clien
+#       t retry authentication for a permission failure.
+#   PERSONA-DTAG [nonconformance]
+#       buzz product contract, not a NIP: kind:30175 persona `d` tags must be a slug (non-empty, <=64, l
+#       owercase, no leading underscore, restricted charset). None of that is validated at ingest -- emp
+#       ty, missing, 65+, uppercase, punctuation and leading `_` are all accepted with OK true. No chars
+#       et or length check exists in ingress.rs or kind.rs.
+#   PERSONA-SHARED [nonconformance]
+#       buzz product contract: kind:30175's `shared` tag must be exactly ["shared","true"]. ["shared","f
+#       alse"] and a three-element ["shared","true","extra"] are both accepted.
+#   NIP50 [nonconformance]
+#       NIP-50 search is refused with CLOSED 'unsupported: this relay does not implement NIP-50 search'
+#       (filter.rs:22 routes `search` at an engine that does not exist in this port). Honest -- NIP-11 d
+#       oes not claim 50 -- but it gates four interop tests.
+#   MEDIA-FACE [infra]
+#       No Blossom/NIP-96 media upload face. ferrite.json exposes /buzz/blob/ as a read-only content rou
+#       te and the app has no upload handler, so the gateway answers the PUT itself with 400 'request bo
+#       dies are not accepted'.
+#   GIT-S3 [infra]
+#       Needs S3-backed git hosting (BUZZ_GIT_S3_*) plus the media upload face; neither exists here.
+#   MAX-SUBS [deployment]
+#       Asserts upstream's own constant: NIP-11 max_subscriptions 1024 vs our 256, chosen deliberately i
+#       n ws.rs:60 after 32 broke buzz's client.
+#   SUB-FLOOD [deployment]
+#       Not run: opens 1024 subscriptions over an ssh tunnel (~15 min) purely to assert upstream's max_s
+#       ubscriptions=1024 against our deliberate 256 (ws.rs:60).
+#   MULTI-TENANT [untranslatable]
+#       Needs two host-mapped communities inside one relay process. One Ferrite app is one community and
+#        the gateway forwards no Host (buzz-relay/src/lib.rs:63).
+#   NIP42-HOSTS [untranslatable]
+#       Hardcodes ws://a.localhost:3100 and ws://b.localhost:3100 with no env override, and needs two ho
+#       st-bound communities in one process.
+#   UPSTREAM-TODO [upstream-stub]
+#       Upstream ships this row as todo!() -- it fails against buzz's own relay too.
+#   SELF-SKIP [self-skip]
+#       Upstream's test returns early because its fixture env var (MEMBER_NSEC / STRANGER_NSEC / MESH_OP
+#       ENAI_BASE / TEST_IMAGE_PATH) is unset. The pass asserts nothing about our relay.
+#   REMINDER-BLOCKED [missing-shim]
+#       Same X-PUBKEY wall: every kind:30300 test drives the relay through submit_event_http. The kind:3
+#       0300 write-path validation gap behind it (not_before digit/parse/horizon rules, expiration > not
+#       _before, `d` present/non-empty/unique) is UNVERIFIED from here.
+#   FLAKY [flaky]
+#       Passes deterministically in isolation (verified 3x) but timed out once inside a
+#       218-test sequential run. collect_until_eose's budget is 5s across an ssh tunnel.
+#
+conformance_multitenant	api_tokens_nip98_replay::nip98_replay_seenset_is_shared_and_community_scoped	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	channelless_global_events_dms::dm_does_not_cross_deliver_between_communities	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	channelless_global_events_dms::same_event_id_and_dtag_coexist_across_communities	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	channels_membership::same_channel_uuid_in_two_communities_is_isolated	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	feed_read_side_isolation::feed_mentions_do_not_cross_communities_over_the_wire	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	git_hosting::same_owner_repo_isolated_push_does_not_cross	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	media_blossom::media_metadata_boundary_holds_while_blob_bytes_shared	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	membership_allowlist::archive_in_a_does_not_affect_b	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	mesh_agents_cli::one_key_two_communities_no_bleed	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	nip11_relay_info::nip11_is_not_a_cross_community_enumeration_oracle	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	pubsub_presence_typing::fanout_and_presence_do_not_cross_communities	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	row_zero_host_binding::client_supplied_community_cannot_override_host	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	row_zero_host_binding::unmapped_host_fails_closed_generically	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	search_fts::search_results_and_deletes_are_community_scoped	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	users_profiles_nip05::same_nip05_local_part_on_two_hosts_is_independent	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	users_profiles_nip05::same_pubkey_distinct_profiles_in_two_communities	FAIL	untranslatable	MULTI-TENANT
+conformance_multitenant	workflows::approval_token_is_community_confined	FAIL	upstream-stub	UPSTREAM-TODO
+conformance_multitenant	workflows::workflow_trigger_is_community_confined	FAIL	untranslatable	MULTI-TENANT
+e2e_event_reminder	test_author_can_count_own_reminders_http	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_author_can_query_own_reminders_http	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_author_can_subscribe_to_own_reminders_ws	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_fanout_isolation_other_user_does_not_receive_reminder	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_mixed_kind_filter_omits_other_authors_reminders_ws	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_other_user_cannot_count_reminders_http	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_other_user_cannot_query_reminders_http	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_other_user_subscription_closed_for_author_only_kind_ws	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_accepted_expiration_without_not_before	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_accepted_missing_not_before	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_accepted_with_expiration_after_not_before	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_accepted_with_malformed_expiration	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_accepted_with_valid_not_before	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_not_before_max_safe_integer_rejected_too_far_in_future	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_not_before_zero_accepted	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_duplicate_d_tag	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_duplicate_not_before	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_empty_d_tag	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_expiration_before_not_before	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_expiration_equal_to_not_before	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_malformed_not_before_leading_zero	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_malformed_not_before_non_digits	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_missing_d_tag	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_not_before_above_max_safe_integer	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_rejected_not_before_too_far_in_future	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_reminder_replacement_semantics	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_scheduler_delivers_due_reminder_to_author_subscription	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_ws_count_returns_zero_for_other_users_reminders	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_event_reminder	test_ws_search_isolation_other_user_cannot_find_reminder	FAIL	missing-shim	REMINDER-BLOCKED
+e2e_git	git_clone_push_fetch_force_roundtrip	FAIL	infra	GIT-S3
+e2e_git	git_concurrent_push_one_wins_and_repo_recovers	FAIL	infra	GIT-S3
+e2e_human_edit_agent_content	test_agent_can_self_delete_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_agent_can_self_edit_message	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_archive_agent_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_delete_agent_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_delete_agent_message	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_delete_agent_message_in_private_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_delete_agent_message_kind5	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_delete_private_agent_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_edit_agent_channel_metadata	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_edit_agent_message	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_edit_agent_message_in_private_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_owner_can_edit_metadata_of_private_agent_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_removed_author_cannot_delete_own_message_in_private_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_removed_author_cannot_edit_own_message_in_private_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_third_party_cannot_delete_agent_channel	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_third_party_cannot_delete_agent_message	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_third_party_cannot_delete_agent_message_kind5	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_third_party_cannot_edit_agent_channel_metadata	FAIL	missing-shim	X-PUBKEY
+e2e_human_edit_agent_content	test_third_party_cannot_edit_agent_message	FAIL	missing-shim	X-PUBKEY
+e2e_long_form	test_long_form_a_tag_deletion	FAIL	nonconformance	NIP09-A-TAG
+e2e_long_form	test_long_form_accepted	PASS	conform
+e2e_long_form	test_long_form_malformed_e_plus_a_does_not_delete	PASS	conform
+e2e_long_form	test_long_form_nip33_replacement	PASS	conform
+e2e_long_form	test_long_form_retrievable	PASS	conform
+e2e_long_form	test_long_form_set_twice_preserves_published_at	PASS	conform
+e2e_long_form	test_long_form_stale_write_rejected	PASS	conform
+e2e_long_form	test_long_form_stray_h_tag_ignored	PASS	conform
+e2e_managed_agent	test_legacy_fat_agent_event_still_accepted	PASS	conform
+e2e_managed_agent	test_managed_agent_nip33_replacement_newer_wins	PASS	conform
+e2e_managed_agent	test_managed_agent_publish_and_query	PASS	conform
+e2e_managed_agent	test_managed_agent_round_trips_only_projected_fields	PASS	conform
+e2e_managed_agent	test_managed_agent_tombstone_deletes_coordinate	FAIL	nonconformance	CLOSED-SHAPE
+e2e_media	test_get_nonexistent_returns_404	PASS	conform
+e2e_media	test_upload_and_get	FAIL	infra	MEDIA-FACE
+e2e_media	test_upload_hash_mismatch_returns_400	FAIL	infra	MEDIA-FACE
+e2e_media	test_upload_idempotent	FAIL	infra	MEDIA-FACE
+e2e_media	test_upload_missing_x_sha256_returns_401	FAIL	infra	MEDIA-FACE
+e2e_media	test_upload_no_auth_returns_401	FAIL	infra	MEDIA-FACE
+e2e_media	test_upload_real_image	PASS	self-skip	SELF-SKIP
+e2e_media_extended	test_auth_empty_content	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_auth_expired_token	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_auth_missing_expiration	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_auth_missing_t_tag	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_auth_server_tag_correct	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_auth_server_tag_mismatch	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_auth_wrong_kind	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_concurrent_upload_same_file	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_legacy_media_route_rejects_non_media	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_legacy_media_route_still_accepts_canonical_media	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_standard_upload_rejects_recognized_audio	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_upload_gif_roundtrip	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_upload_pdf_accepted	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_upload_png_roundtrip	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_upload_random_bytes_accepted	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_upload_svg_accepted_as_text_xml	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_upload_webp_roundtrip	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_upload_zero_bytes_accepted	FAIL	infra	MEDIA-FACE
+e2e_media_extended	test_ws_invalid_imeta_external_url	FAIL	missing-shim	X-PUBKEY
+e2e_media_extended	test_ws_invalid_imeta_missing_fields	FAIL	missing-shim	X-PUBKEY
+e2e_media_extended	test_ws_valid_imeta	FAIL	missing-shim	X-PUBKEY
+e2e_media_video	test_video_content_type_header_ignored	FAIL	infra	MEDIA-FACE
+e2e_media_video	test_video_poster_imeta_accepted_via_ws	FAIL	missing-shim	X-PUBKEY
+e2e_media_video	test_video_poster_imeta_rejects_video_as_poster	FAIL	infra	MEDIA-FACE
+e2e_media_video	test_video_range_request_206	FAIL	infra	MEDIA-FACE
+e2e_media_video	test_video_range_request_416	FAIL	infra	MEDIA-FACE
+e2e_media_video	test_video_upload_and_get	FAIL	infra	MEDIA-FACE
+e2e_media_video	test_video_upload_no_auth_returns_401	FAIL	infra	MEDIA-FACE
+e2e_mesh_llm	live_agent_completes_chat_over_mesh	PASS	self-skip	SELF-SKIP
+e2e_mesh_llm	live_split_model_completes	PASS	self-skip	SELF-SKIP
+e2e_mesh_llm	trust_member_reads_mesh_status	PASS	self-skip	SELF-SKIP
+e2e_mesh_llm	trust_nonmember_read_denied	PASS	self-skip	SELF-SKIP
+e2e_nostr_interop	test_channel_window_rejects_half_cursor_and_client_overlay_kinds	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_channel_window_rows_overlays_and_exact_multiple_exhaustion	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_dm_discovery_events_emitted	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_empty_kinds_returns_zero_events	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_historical_req_dedup_preserves_or_semantics	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip10_root_mismatch_rejected	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip10_thread_reply_creates_metadata	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip10_thread_reply_not_in_top_level	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip10_unknown_parent_rejected	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip17_gift_wrap_accepted	PASS	conform
+e2e_nostr_interop	test_nip17_gift_wrap_not_searchable	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip17_gift_wrap_recipient_receives	PASS	conform
+e2e_nostr_interop	test_nip17_gift_wrap_requires_p_filter	PASS	conform
+e2e_nostr_interop	test_nip50_search_empty_results	FAIL	nonconformance	NIP50
+e2e_nostr_interop	test_nip50_search_mixed_filters_rejected	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip50_search_relevance_order	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nip50_search_returns_results_and_eose	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_explicit_kind_query_forbidden_for_third_party	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_hide_then_reopen_updates_snapshot	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_ids_query_rejects_third_party	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_same_second_reopen_supersedes_hide	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_search_rejects_third_party	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_snapshot_is_private_to_owner	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_two_viewers_independent_snapshots	FAIL	missing-shim	X-PUBKEY
+e2e_nostr_interop	test_nipdv_ws_req_rejects_third_party	FAIL	missing-shim	X-PUBKEY
+e2e_persona	test_behavioral_fields_persona_ingests_and_round_trips	PASS	conform
+e2e_persona	test_persona_accepts_valid_slugs	PASS	conform
+e2e_persona	test_persona_count_excludes_foreign_unshared	FAIL	nonconformance	NIP45-COUNT
+e2e_persona	test_persona_http_count_cross_author_gate	FAIL	missing-shim	X-PUBKEY
+e2e_persona	test_persona_http_query_cross_author_gate	FAIL	missing-shim	X-PUBKEY
+e2e_persona	test_persona_http_query_shared_visible_with_newer_private_ahead	FAIL	missing-shim	X-PUBKEY
+e2e_persona	test_persona_ids_lookup_unshared_returns_nothing_to_foreign	PASS	conform
+e2e_persona	test_persona_ingest_rejects_three_element_shared_tag	FAIL	nonconformance	PERSONA-SHARED
+e2e_persona	test_persona_ingest_shared_tag_validation	FAIL	nonconformance	PERSONA-SHARED
+e2e_persona	test_persona_live_fanout_shared_gate	FAIL	nonconformance	CLOSED-SHAPE
+e2e_persona	test_persona_mixed_kind_filter_does_not_leak	FAIL	missing-shim	X-PUBKEY
+e2e_persona	test_persona_multiple_per_author	PASS	conform
+e2e_persona	test_persona_nip33_older_does_not_replace_newer	PASS	conform
+e2e_persona	test_persona_nip33_replacement_newer_wins	PASS	conform
+e2e_persona	test_persona_publish_and_query	PASS	conform
+e2e_persona	test_persona_rejects_d_tag_special_chars	FAIL	nonconformance	PERSONA-DTAG
+e2e_persona	test_persona_rejects_d_tag_starting_with_underscore	FAIL	nonconformance	PERSONA-DTAG
+e2e_persona	test_persona_rejects_d_tag_too_long	FAIL	nonconformance	PERSONA-DTAG
+e2e_persona	test_persona_rejects_d_tag_uppercase	FAIL	nonconformance	PERSONA-DTAG
+e2e_persona	test_persona_rejects_empty_d_tag	FAIL	nonconformance	PERSONA-DTAG
+e2e_persona	test_persona_rejects_missing_d_tag	FAIL	nonconformance	PERSONA-DTAG
+e2e_persona	test_persona_shared_read_gate_foreign_sees_only_shared	PASS	conform
+e2e_persona	test_persona_ws_req_shared_visible_with_newer_private_ahead	PASS	conform
+e2e_persona	test_promptless_persona_ingests_and_round_trips	PASS	conform
+e2e_relay	test_auth_event_kind_rejected	PASS	conform
+e2e_relay	test_client_submitted_nip43_membership_snapshots_are_rejected	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_close_subscription_stops_delivery	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_connect_and_authenticate	PASS	conform
+e2e_relay	test_eose_sent_for_empty_subscription	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_ephemeral_event_not_stored	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_invite_claim_rejects_invalid_code	FAIL	nonconformance	HTTP-403
+e2e_relay	test_invite_code_minted_for_one_host_fails_on_another	FAIL	untranslatable	MULTI-TENANT
+e2e_relay	test_invite_mint_and_claim_admits_new_pubkey	FAIL	missing-shim	MODERATOR-SEED
+e2e_relay	test_invite_mint_requires_owner_or_admin	FAIL	nonconformance	HTTP-403
+e2e_relay	test_kind0_nip05_sync	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_large_event_frame_below_configured_limit_is_accepted	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_membership_notification_emitted_on_add	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_membership_notification_emitted_on_remove	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_membership_notification_kind_rejected	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_membership_notification_mixed_filter_rejected	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_membership_notification_multi_p_rejected	PASS	conform
+e2e_relay	test_membership_notification_requires_own_p_filter	PASS	conform
+e2e_relay	test_membership_notification_requires_p_filter	PASS	conform
+e2e_relay	test_membership_notification_wildcard_filter_rejected	FAIL	nonconformance	CLOSED-SHAPE
+e2e_relay	test_multiple_concurrent_clients	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_nip11_relay_info	FAIL	deployment	MAX-SUBS
+e2e_relay	test_nip29_put_user_default_policy_allows	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_nip29_put_user_nobody_blocks	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_nip29_put_user_owner_only_blocks	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_nip29_put_user_self_add_bypasses_policy	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_nip29_standard_client_flow	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_private_channel_any_member_can_invite	FAIL	nonconformance	NIP29-9007
+e2e_relay	test_private_channel_member_cannot_grant_admin	FAIL	nonconformance	NIP29-9007
+e2e_relay	test_private_channel_non_member_cannot_invite	FAIL	nonconformance	NIP29-9007
+e2e_relay	test_pubkey_mismatch_rejected	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_reply_ingest_pushes_live_thread_summary	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_send_event_and_receive_via_subscription	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_stored_events_returned_before_eose	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_subscription_filters_by_kind	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_subscription_limit_enforced	SKIP	deployment	SUB-FLOOD
+e2e_relay	test_unarchive_emits_member_added_notification	FAIL	missing-shim	X-PUBKEY
+e2e_relay	test_unauthenticated_rejected	PASS	conform
+e2e_team	test_team_nip33_replacement_newer_wins	PASS	conform
+e2e_team	test_team_publish_and_query	PASS	conform
+e2e_team	test_team_tombstone_deletes_coordinate	FAIL	nonconformance	NIP09-A-TAG
+e2e_user_status	test_user_status_accepted	PASS	conform
+e2e_user_status	test_user_status_multiple_d_tags_coexist	PASS	conform
+e2e_user_status	test_user_status_nip33_replacement	PASS	conform
+e2e_user_status	test_user_status_retrievable	PASS	conform
+e2e_user_status	test_user_status_stale_write_rejected	PASS	conform
+nip42_host_binding_live	nip42_cross_host_rejected_a_relay_tag_on_b_connection	FAIL	untranslatable	NIP42-HOSTS
+nip42_host_binding_live	nip42_cross_host_rejected_b_relay_tag_on_a_connection	FAIL	untranslatable	NIP42-HOSTS
+nip42_host_binding_live	nip42_matching_host_accepted_a	FAIL	untranslatable	NIP42-HOSTS
+nip42_host_binding_live	nip42_matching_host_accepted_b	FAIL	untranslatable	NIP42-HOSTS

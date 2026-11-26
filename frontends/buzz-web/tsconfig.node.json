@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    // A referenced project must be composite and must emit (TS6306/TS6310);
+    // declarations go to a scratch dir so nothing lands in the app bundle.
+    "composite": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "./node_modules/.tmp/tsconfig-node",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    /* Tooling + Playwright run in Node, so `process` and friends are real here.
+       The app's own tsconfig deliberately keeps `types` at ["vite/client"] so
+       browser code cannot reach for Node globals by accident. */
+    "types": ["node"]
+  },
+  "include": [
+    "vite.config.ts",
+    "playwright.config.ts",
+    "scripts",
+    "e2e"
+  ]
+}

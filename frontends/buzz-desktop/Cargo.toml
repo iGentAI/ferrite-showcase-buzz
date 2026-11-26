@@ -1,0 +1,20 @@
+# The desktop shell is its OWN workspace, deliberately kept out of the root
+# one. That workspace holds constrained Ferrite apps, each admitted exactly
+# one runtime dependency; a Tauri client is not one of those, and letting its
+# dependency tree in would blur the rule that keeps those apps auditable. The
+# root `Cargo.toml` lists this directory under `exclude`.
+[workspace]
+resolver = "2"
+members = ["core", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["iGent AI"]
+license = "MIT"
+repository = "https://github.com/iGentAI/ferrite-showcase-buzz"
+rust-version = "1.89"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"

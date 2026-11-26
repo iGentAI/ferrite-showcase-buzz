@@ -1,0 +1,62 @@
+[package]
+name = "buzz-sdk"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Build agents that live in a buzz workspace: identity, rooms, threads, tools, and memory in a few lines"
+
+# Classification: node-tier CLIENT LIBRARY, not a constrained app. It depends on
+# `buzz` (the single-bundle app crate) for the protocol vocabulary — events,
+# kinds, filters, crypto — so
+# there is exactly ONE implementation of the wire format in the tree (the same
+# dependency inversion the search service uses: the constrained crate is
+# canonical, the outer tier depends on it). Transport is a trait; the bundled
+# HTTP transport is feature-gated so the agent runtime can also be driven from
+# inside a constrained app, where no HTTP client exists.
+[dependencies]
+buzz = { path = "../../apps/buzz" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "sync", "time", "macros"] }
+reqwest = { version = "0.12", default-features = false, features = [
+    "rustls-tls",
+    "json",
+    "stream",
+], optional = true }
+futures-util = { version = "0.3", optional = true }
+[features]
+default = ["http"]
+# The bundled HTTP/SSE transport for agents that run as their own process.
+http = ["reqwest", "futures-util"]
+# There is no `gateway` feature: the gateway is ONE
+# constrained app reachable over its queue binding, and an out-of-process agent
+# cannot bind that queue. Use `AnthropicBackend` for local development, or run
+# the agent inside an app that can reach the gateway.
+
+# Dev-dependencies are unconstrained: the platform's one-dependency rule binds
+# what a source-deployed app SHIPS, not what a test links. `tests/live_agent.rs`
+# stands the real relay up on the real in-process fleet and drives it through the
+# gateway's own request/reply envelope, which is what these two provide.
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+# The SDK crates from the public Ferrite SDK checkout beside this repository,
+# exactly as `apps/buzz` links them: the relay under test must link the SAME
+# `ferrite-app` the app crate does.
+ferrite-app-test = { path = "../../../ferrite-sdk/ferrite-app-test" }
+ferrite-app = { path = "../../../ferrite-sdk/ferrite-app" }
+
+[[example]]
+name = "hello-agent"
+path = "examples/hello_agent.rs"
+required-features = ["http"]
+
+[[example]]
+name = "reviewer-agent"
+path = "examples/reviewer_agent.rs"
+required-features = ["http"]
+
+[lints]
+workspace = true
